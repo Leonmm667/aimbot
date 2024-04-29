@@ -1,0 +1,67 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local AimLock = false
+
+local function FindNearestPlayer()
+    local NearestPlayer
+    local ShortestDistance = math.huge
+
+    for _, Player in ipairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            local Character = Player.Character
+            if Character then
+                local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+                if Humanoid then
+                    local Head = Character:FindFirstChild("Head")
+                    if Head then
+                        local Position, OnScreen = Camera:WorldToViewportPoint(Head.Position)
+                        if OnScreen then
+                            local Distance = (Vector2.new(Position.X, Position.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                            if Distance < ShortestDistance then
+                                ShortestDistance = Distance
+                                NearestPlayer = Player
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return NearestPlayer
+end
+
+local function AimAt(Player)
+    local Character = Player.Character
+    if Character then
+        local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+        if Humanoid then
+            local Head = Character:FindFirstChild("Head")
+            if Head then
+                local Position, OnScreen = Camera:WorldToViewportPoint(Head.Position)
+                if OnScreen then
+                    local Magnitude = (Vector2.new(Position.X, Position.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                    local Direction = (Vector2.new(Position.X, Position.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Unit
+                    local Ray = Ray.new(Camera.CFrame.Position, Direction * Magnitude)
+                    local Hit, Position, Normal = workspace:FindPartOnRayWithIgnoreList(Ray, {LocalPlayer.Character})
+                    if Hit then
+                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, Position)
+                    end
+                end
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if AimLock then
+        local NearestPlayer = FindNearestPlayer()
+        if NearestPlayer then
+            AimAt(NearestPlayer)
+        end
+    end
+end)
